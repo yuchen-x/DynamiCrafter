@@ -1,5 +1,5 @@
 model:
-  pretrained_checkpoint: checkpoints/dynamicrafter_1024_v1/model.ckpt
+  pretrained_checkpoint: /root/autodl-fs/model_1024.ckpt
   base_learning_rate: 1.0e-05
   scale_lr: False
   target: lvdm.models.ddpm3d.LatentVisualDiffusion
@@ -118,8 +118,8 @@ data:
     train:
       target: lvdm.data.webvid.WebVid
       params:
-        data_dir: <WebVid10M DATA>
-        meta_path: <.csv FILE>
+        data_dir: '/root/autodl-tmp/open-x-videos/train'
+        meta_path: '/root/autodl-tmp/open-x-videos/train/data.csv'
         video_length: 16
         frame_stride: 6
         load_raw_resolution: true
