@@ -1152,6 +1152,7 @@ class LatentVisualDiffusion(LatentDiffusion):
         xc_with_fs = []
         for idx, content in enumerate(xc):
             xc_with_fs.append(content + '_fs=' + str(fs[idx].item()))
+        log['caption'] = xc
         log["condition"] = xc_with_fs
         kwargs.update({"fs": fs.long()})
 
