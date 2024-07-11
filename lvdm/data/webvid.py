@@ -74,10 +74,6 @@ class WebVid(Dataset):
         else:
             self.spatial_transform = None
 
-        # add fps and frame_stride statistics
-        self.fps_stat = {}
-        self.fs_stat = {}
-
     def _load_metadata(self):
         metadata = pd.read_csv(self.meta_path, dtype=str)
         print(f'>>> {len(metadata)} data samples loaded.')
@@ -226,8 +222,6 @@ class WebVid(Dataset):
             'frame_stride': frame_stride
         }
 
-        self.fps_stat[fps_clip] = self.fps_stat.get(fps_clip, 0) + 1
-        self.fs_stat[frame_stride] = self.fs_stat.get(frame_stride, 0) + 1 
         return data
 
     def __len__(self):
