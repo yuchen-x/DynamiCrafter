@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import json
 mainlogger = logging.getLogger('mainlogger')
 
 import torch
@@ -10,6 +11,8 @@ from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.utilities import rank_zero_only
 from pytorch_lightning.utilities import rank_zero_info
 from utils.save_video import log_local, prepare_to_log
+
+STAT_DIR = '~/'
 
 
 class ImageLogger(Callback):
@@ -22,6 +25,10 @@ class ImageLogger(Callback):
         self.to_local = to_local
         self.clamp = clamp
         self.log_images_kwargs = log_images_kwargs if log_images_kwargs else {}
+        self.save_stat_dir = os.path.join(save_dir, "stat")
+        os.makedirs(self.save_stat_dir, exist_ok=True)
+        self.fps_stat = {}
+        self.fs_stat = {}
         if self.to_local:
             ## default save dir
             self.save_dir = os.path.join(save_dir, "images")
@@ -33,7 +40,11 @@ class ImageLogger(Callback):
         global_step = pl_module.global_step
         for key in batch_logs:
             value = batch_logs[key]
-            tag = "gs%d-%s/%s-%s"%(global_step, split, filename, key)
+            tag = "gs%d-%s/%s-%s\n%s\n%s"%(
+                    global_step, split, filename, key, 
+                    batch_logs['condition'][0].split('_')[0],
+                    batch_logs['condition'][0].split('_')[1]
+                    )
             if isinstance(value, list) and isinstance(value[0], str):
                 captions = ' |------| '.join(value)
                 pl_module.logger.experiment.add_text(tag, captions, global_step=global_step)
@@ -57,8 +68,16 @@ class ImageLogger(Callback):
     @rank_zero_only
     def log_batch_imgs(self, pl_module, batch, batch_idx, split="train"):
         """ generate images, then save and log to tensorboard """
+        # update fps and fs statistics
+        batch_fps = batch['fps'].tolist()
+        batch_fs = batch['frame_stride'].tolist()
+        for num in batch_fps:
+            self.fps_stat[num] = self.fps_stat.get(num, 0) + 1
+        for num in batch_fs:
+            self.fs_stat[num] = self.fs_stat.get(num, 0) + 1
         skip_freq = self.batch_freq if split == "train" else 5
         if (batch_idx+1) % skip_freq == 0:
+
             is_train = pl_module.training
             if is_train:
                 pl_module.eval()
@@ -66,6 +85,9 @@ class ImageLogger(Callback):
             with torch.no_grad():
                 log_func = pl_module.log_images
                 batch_logs = log_func(batch, split=split, **self.log_images_kwargs)
+                # log fps and fs statistics
+                with open(self.save_stat_dir+'/fps_fs_stat.json', 'w') as file:
+                    json.dump({'fps': self.fps_stat, 'fs': self.fs_stat}, file, indent=4)
             
             ## process: move to CPU and clamp
             batch_logs = prepare_to_log(batch_logs, self.max_images, self.clamp)
