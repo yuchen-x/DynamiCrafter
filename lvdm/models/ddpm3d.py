@@ -1198,6 +1198,7 @@ class LatentVisualDiffusion(LatentDiffusion):
                 denoise_grid = self._get_denoise_row_from_list(z_denoise_row)
                 log["denoise_row"] = denoise_grid
 
+        log["video_idx"] = batch["path"][0].split('/')[-1][:-4]
         return log
 
     def configure_optimizers(self):

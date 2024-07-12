@@ -40,10 +40,11 @@ class ImageLogger(Callback):
         global_step = pl_module.global_step
         for key in batch_logs:
             value = batch_logs[key]
-            tag = "gs%d-%s/%s-%s\n%s\n%s"%(
-                    global_step, split, filename, key, 
+            tag = "gs%d-%s/%s||%s||%s||%s"%(
+                    global_step, split, key, 
                     batch_logs['condition'][0].split('_')[0],
-                    batch_logs['condition'][0].split('_')[1]
+                    batch_logs['condition'][0].split('_')[1],
+                    batch_logs['video_idx']
                     )
             if isinstance(value, list) and isinstance(value[0], str):
                 captions = ' |------| '.join(value)
