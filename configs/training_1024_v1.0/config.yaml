@@ -23,7 +23,7 @@ model:
     use_ema: False
     uncond_prob: 0.05
     uncond_type: 'empty_seq'
-    rand_cond_frame: true
+    rand_cond_frame: false
     use_dynamic_rescale: true
     base_scale: 0.3
     fps_condition_type: 'fps'
@@ -144,7 +144,7 @@ lightning:
     model_checkpoint:
       target: pytorch_lightning.callbacks.ModelCheckpoint
       params:
-        every_n_train_steps: 9000 #1000
+        every_n_train_steps: 2000 #1000
         filename: "{epoch}-{step}"
         save_weights_only: True
     metrics_over_trainsteps_checkpoint:
@@ -156,7 +156,7 @@ lightning:
     batch_logger:
       target: callbacks.ImageLogger
       params:
-        batch_frequency: 500
+        batch_frequency: 250
         to_local: False
         max_images: 8
         log_images_kwargs:
