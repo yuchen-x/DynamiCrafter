@@ -3,7 +3,11 @@ from abc import abstractmethod
 import torch
 import torch.nn as nn
 from einops import rearrange
+
+
 import torch.nn.functional as F
+import sys
+sys.path.append('/home/yuchen-x/Documents/projects/dynamicrafter')
 from lvdm.models.utils_diffusion import timestep_embedding
 from lvdm.common import checkpoint
 from lvdm.basics import (
@@ -278,6 +282,7 @@ class TemporalConvBlock(nn.Module):
 
         return identity + x
 
+
 class UNetModel(nn.Module):
     """
     The full UNet model with attention and timestep embedding.
@@ -335,6 +340,7 @@ class UNetModel(nn.Module):
                  use_fp16=False,
                  addition_attention=False,
                  temporal_selfatt_only=True,
+                 temporal_trainable = True,
                  image_cross_attention=False,
                  image_cross_attention_scale_learnable=False,
                  default_fs=4,
@@ -397,6 +403,9 @@ class UNetModel(nn.Module):
                     use_checkpoint=use_checkpoint, only_self_att=temporal_selfatt_only, 
                     causal_attention=False, relative_position=use_relative_position, 
                     temporal_length=temporal_length))
+            if not temporal_trainable:
+                for param in self.init_attn.parameters():
+                    param.requires_grad = False
 
         input_block_chans = [model_channels]
         ch = model_channels
@@ -434,6 +443,11 @@ class UNetModel(nn.Module):
                                 temporal_length=temporal_length
                             )
                         )
+                        if not temporal_trainable:
+                            for param in layers[-1].parameters():
+                                param.requires_grad = False
+
+
                 self.input_blocks.append(TimestepEmbedSequential(*layers))
                 input_block_chans.append(ch)
             if level != len(channel_mult) - 1:
@@ -479,6 +493,10 @@ class UNetModel(nn.Module):
                     temporal_length=temporal_length
                 )
             )
+            if not temporal_trainable:
+                for param in layers[-1].parameters():
+                    param.requires_grad = False
+
         layers.append(
             ResBlock(ch, time_embed_dim, dropout,
                 dims=dims, use_checkpoint=use_checkpoint,
@@ -525,6 +543,9 @@ class UNetModel(nn.Module):
                                 temporal_length=temporal_length
                             )
                         )
+                        if not temporal_trainable:
+                            for param in layers[-1].parameters():
+                                param.requires_grad = False
                 if level and i == num_res_blocks:
                     out_ch = ch
                     layers.append(
