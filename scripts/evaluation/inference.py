@@ -1,5 +1,6 @@
 import argparse, os, sys, glob
 import datetime, time
+import pandas as pd
 from omegaconf import OmegaConf
 from tqdm import tqdm
 from einops import rearrange, repeat
@@ -68,8 +69,9 @@ def load_data_prompts(data_dir, video_size=(256,256), video_frames=16, interp=Fa
         transforms.CenterCrop(video_size),
         transforms.ToTensor(),
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))])
+
     ## load prompts
-    prompt_file = get_filelist(data_dir, ['txt'])
+    prompt_file = get_filelist(data_dir, ['csv'])
     assert len(prompt_file) > 0, "Error: found NO prompt file!"
     ###### default prompt
     default_idx = 0
@@ -83,8 +85,11 @@ def load_data_prompts(data_dir, video_size=(256,256), video_frames=16, interp=Fa
     # assert len(file_list) == n_samples, "Error: data and prompts are NOT paired!"
     data_list = []
     filename_list = []
-    prompt_list = load_prompts(prompt_file[default_idx])
-    n_samples = len(prompt_list)
+    prompt_list = []
+    # prompt_list = load_prompts(prompt_file[default_idx])
+    prompt_csv = pd.read_csv(prompt_file[default_idx])
+    n_samples = len(file_list)
+
     for idx in range(n_samples):
         if interp:
             image1 = Image.open(file_list[2*idx]).convert('RGB')
@@ -103,6 +108,9 @@ def load_data_prompts(data_dir, video_size=(256,256), video_frames=16, interp=Fa
 
         data_list.append(frame_tensor)
         filename_list.append(filename)
+        video_id = filename[:-4]
+        ins = prompt_csv[prompt_csv['videoid']==int(video_id)]['caption'].values[0]
+        prompt_list.append(ins)
         
     return filename_list, data_list, prompt_list
 
